@@ -14,14 +14,17 @@ library(WriteXLS)
 sample <- read_xlsx("/Users/balajivr/Desktop/BABI/Capstone/Energy_Master.xlsx",sheet = 1, col_names = TRUE)
 
 #Dcast function used to covert Rows to Columns based on the 20 parameters captured
-sampleEM <- dcast(sample, gid+setid+timestamp~reg_name, value.var=c("reg_data"))
+#sampleEM <- dcast(sample, gid+setid+timestamp~reg_name, value.var=c("reg_data"))
+
+#Using Spread from tidyr package to convert rows to column values
+sampleData = sample[,c(2:3,5:7)]
+sampleEM <- spread(sampleData,reg_name,reg_data) 
 
 #Looking at sampleEM data
 head(sampleEM,5) 
 
 #Structure of sampleEM Dataset
 str(sampleEM)
-
 
 #Working with Full Dataset
 setwd("/Users/balajivr/Desktop/BABI/CapData/")
@@ -41,14 +44,16 @@ summary(energyMaster_df)
 
 #Using dcast from reshape2 package to convert the relevant row values into Columns based on setid and timestamp
 newEM_df <- dcast(energyMaster_df, gid+setid+timestamp~reg_name, value.var=c("reg_data"))
-#newEM_df <- dcast(energyMaster_df, ~reg_name, value.var=c("reg_data"))
-remove(newEM_df)
+
+#Trying using spread function in Tidyr package
+#emData = energyMaster_df[,c(2:3,5:7)]
+#newEM_df <- spread(emData, reg_name, reg_data)
+
 head(newEM_df,5)
 
 #Adding rtc_reset column to New EnergyMeter Dataframe
-newEM_df$rtc_reset = 0
+#newEM_df$rtc_reset = 0
 #newEM_df <- newEM_df %>% mutate(id = row_number())
-
 
 #Reading RTC SCHEDULE information RTC Command table
 rtc_reset_df = read.csv2("rtc_command_table.csv", header = TRUE, sep=",")
@@ -61,6 +66,7 @@ rtcShedule=subset(rtc_reset_df,command == "RTC_SCHEDULE")
 rtcShedule
 #rtcShedule <- rtcShedule %>% mutate(id = row_number()+max(newEM_df$id))
 
+#merging Energy Meter data and RTC command table data using timestamp and gid as unique columns
 new_df <- merge(x=newEM_df,y=rtcShedule[,c(2:5,7)],by.x = c("gid","timestamp"),by.y = c("gid","timestamp"),all = TRUE)
 new_df
 #Arranging the new dataset based on timestamp
@@ -71,7 +77,8 @@ WriteXLS(arranged_df,"/Users/balajivr/Desktop/BABI/Capstone/New_data.xlsx")
 
 
 #While Ending the Program, Removing all created dataframes 
-remove(m1)
+remove(emData)
+remove(energyMaster_df)
 remove(new_df)
 remove(rtc_reset_df)
 
