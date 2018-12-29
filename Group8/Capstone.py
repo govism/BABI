@@ -1,7 +1,11 @@
 # coding: utf-8
 # In[ ]:
-
+import numpy as np
 import pandas as pd
+from datetime import datetime
+
+
+# In[ ]:
 WRAP_SIZE=20
 
 #if you are running on Windows, then uncomment and change the file path 
@@ -32,24 +36,49 @@ em_orig = pd.DataFrame(EnergyMeter,columns = colnames)
 print(em_orig.head(5))
 
 # In[ ]:
+#Converting the timestamp object to DateTime Object
+em_orig['timestamp'] =  pd.to_datetime(em_orig['timestamp'], format='%Y%m%d %H:%M:%S')
+print(em_orig.head(5))
+print(em_orig.dtypes)
+
+# In[ ]:
 # To Convert the Rows to columns to create single entry based on setid (reading for every 3 mins)
 emdata = EnergyMeter.pivot_table(index = ['gid','setid','timestamp'], columns='reg_name', values='reg_data')
 print(emdata.head(10))
-emdata.to_csv('converted_data.csv')
-
-# In[ ]:
-
+#emdata.to_csv('converted_data.csv')
 #Checking the Data frame for no of rows & columns    
-emdata.shape
-
-emdata.describe()
+print(emdata.shape)
+print(emdata.describe())
 
 # In[ ]:
+#Inorder to access the index column, doing the reset_index to access emdata['gid'], emdata['timestamp']
+emdata.index.names
+emdata.reset_index(inplace=True)
+emdata.index.names
 
+# In[ ]:
+#Creating a New Column fro RTC_RESET 
+emdata['rtc_reset']=0
+
+# In[ ]:
+#emdata['time'],emdata['date']= emdata['timestamp'].apply(lambda x:x.time()), emdata['timestamp'].apply(lambda x:x.date())
+temp = pd.DatetimeIndex(emdata['timestamp'])
+emdata['date'] = temp.date
+emdata['time'] = temp.time
+emdata['date'] = pd.to_datetime(emdata['date'])
+emdata['timestamp'] = pd.to_datetime(emdata['timestamp'])
+#emdata['time'] = pd.to_datetime(emdata['time'])
+print(emdata.head(5))
+#Checking the No of cols 
+print(emdata.shape)
+print(emdata.dtypes)
+
+# In[ ]:
+#  df = emdata['timestamp'] > '2017-12-01  09:42:59' 
+#emdata[emdata.date.between('2017-12-12 04:40:44', '2017-12-12 04:52:50')]
+# In[ ]:
 # To Write into CSV file for checking whether correctly formed or not.
 #emdata.to_csv('emdata1.csv',sep=',' )
-
-# In[ ]:
 
 #writer = pd.ExcelWriter("D:/BABI/BABICS-master/Group8/New_EM_Dataset.xlsx",engine='xlsxwriter')
 #emdata.to_excel(writer,sheet_name='Sheet1')
@@ -62,12 +91,10 @@ rtc_data = pd.read_csv("/Users/balajivr/Desktop/BABI/CapData/rtc_command_table.c
 
 #Windows code to read RTC COMMAND TABLE, uncomment and change file path accordingly
 #rtc_data = pd.read_csv("D:/BABI/BABICS-master/CapstoneData/rtc_command_table.csv")
-print(rtc_data.head(10))
-print(rtc_data.shape)
+print(rtc_data.head(5))
 
 print(rtc_data.dtypes)
-
-
+print(rtc_data.params)
 # In[ ]:
 
 #Creating dataframe only with relevant fields, removed otherparams like offset
@@ -76,57 +103,135 @@ rtc_data = pd.DataFrame(rtc_data, columns=colnames)
 print(rtc_data.head(5))
 print(rtc_data.shape)
 
+#Creating Dataframe without Null timestamp
+rtc_data =rtc_data[rtc_data['timestamp']!= '0000-00-00 00:00:00']
+print(rtc_data.head(5))
+
+# In[ ]:
+#Converting the timestamp object to DateTime object    
+rtc_data['timestamp'] =  pd.to_datetime(rtc_data['timestamp'])
+#rtc_data['timestamp'] =  pd.to_datetime(rtc_data['timestamp'], format='%Y%m%d %H:%M:%S')
+print(rtc_data.dtypes)
+
 # In[ ]:
 #Selection of only RTC_SCHEDULE which does reset and setting configuration of light intensity
-rtc_data_final=rtc_data[rtc_data.command=='RTC_SCHEDULE']
+rtc_data_final=rtc_data[((rtc_data.command=='RTC_SCHEDULE') & (rtc_data.status=='DONE'))]
 print(rtc_data_final.head(5))
 
 # In[ ]:
-# Experimental code with merge_asof function
-#RTCResetdf = pd.Dataframe
-#df_merge_asof = pd.merge_asof(trades, quotes,
-#              on='time',
-#              by='ticker')
-#df_merge_asof
-#MergeEnergyRTC = pd.merge_asof(emdata, rtc_data_final, on='timestamp', by='gid')
 
-#Merging 2 Dataframes Energymeter and rtc schedule data into single dataframe
-MergeEnergyRTC = pd.merge(emdata, rtc_data_final, how='left',on=['gid','timestamp'])
+temp = pd.DatetimeIndex(rtc_data_final['timestamp'])
+rtc_data_final['date'] = temp.date
+rtc_data_final['time'] = temp.time
 
-#MergeEnergyRTC = pd.merge(emdata, rtc_data_final, on="timestamp")
-print(MergeEnergyRTC.shape)
-print(MergeEnergyRTC.head(10))
-print(MergeEnergyRTC.tail(10))
-# In[ ]:
-
-
+rtc_data_final['date'] = pd.to_datetime(rtc_data_final['date'])
+#rtc_data_final['time'] = pd.to_datetime(rtc_data_final['time']).time()
+print(rtc_data_final.head(5))
+#Checking the No of cols 
+print(rtc_data_final.shape)
 
 # In[ ]:
+#Spliting the Params into phaseline applied and what sindex configuration applied
+#rtc_data_final['phaseapplied']=rtc_data_final[rtc_data_final.params]
+# new data frame with split value columns 
+newcols = rtc_data_final['params'].str.split(":", n=1, expand = True) 
+  
+# making seperate first name column from new data frame 
+rtc_data_final['phaseapplied'] = newcols[0] 
+  
+# making seperate last name column from new data frame 
+rtc_data_final['sindex'] = newcols[1] 
 
-#RTCReset[RTCReset.columns[4]]=RTCReset[RTCReset.columns[4]].str.strip()
-#RTCReset[RTCReset.columns[4]]
-#RTCReset[RTCReset.columns[6]]=RTCReset[RTCReset.columns[6]].str.strip()
-#RTCReset[RTCReset.columns[6]]
-#df= pd.DataFrame(columns=["gid","setid","Frequency", 
-#                          "Voltage Phase R","Voltage Phase Y","Voltage Phase B",
-#                          "Voltage Phase R to Y","Voltage Phase Y to B","Voltage Phase B to R",
-#                          "Current Phase R","Current Phase Y","Current Phase B",
-#                          "Power Factor R","Power Factor Y","Power Factor B","Total Power Factor",
-#                          "Active Power R","Active Power Y","Active Power B","Total Active Power",
-#                          "Active Energy","Load Hours","timestamp","rtc_reset"])
-#df
+print(rtc_data_final.head(5))
+print(rtc_data_final.dtypes)
+
+# In[ ]:
+# Reading the RTC Schedule configuration data
+#Linux/MAC code to read RTC COMMAND TABLE, uncomment and change file path accordingly
+rtc_config_df = pd.read_csv("/Users/balajivr/Desktop/BABI/CapData/rtc_schedule_index.csv")
+
+#Windows code to read RTC COMMAND TABLE, uncomment and change file path accordingly
+#rtc_data = pd.read_csv("D:/BABI/BABICS-master/CapstoneData/rtc_command_table.csv")
+rtc_config_df = rtc_config_df[['sindex','time_hh','time_mm', 'pwm']]
+rtc_config_df['time_hh'] = rtc_config_df['time_hh'].astype(str)
+rtc_config_df['time_mm'] = rtc_config_df['time_mm'].astype(str)
+
+#rtc_config_df['time'] = datetime.time(rtc_config_df['time_hh'],rtc_config_df['time_mm'])
+#rtc_config_df['time'] = datetime.datetime.combine(datetime.time(rtc_config_df['time_hh'],rtc_config_df['time_mm']))
+rtc_config_df['time'] = rtc_config_df['time_hh'] + ":" + rtc_config_df['time_mm'] +":00"
+#string.format(rtc_config_df['time'], '%H:%M:%S')
+#rtc_config_df['time'] = format(rtc_config_df['time'], '%H:%M:%S')
+rtc_config_df['time'] = pd.to_datetime(rtc_config_df['time'], format='%H:%M:%S')
+#check how to convert to time object 
+#rtc_config_df['time'] = pd.to_datetime(rtc_config_df['time'])
+print(rtc_config_df.head(10))
+print(rtc_config_df.shape)
+# In[ ]:
+print(rtc_config_df.dtypes)
+print(rtc_data_final.dtypes)
+print(emdata.dtypes)
+
+# In[ ]:
+sch_ts = []    
+for index, row in rtc_data_final.iterrows():
+    #emdata[emdata.date.between('2017-12-12 ', '2017-12-12')]
+    print(row.sindex)
+    startdate = row.date
+    print (startdate)
+    next = next(rtc_data_final.iterrows())
+    temp_df = emdata[(emdata['timestamp'] > startdate) & (emdata['timestamp'] < next.date)]
+#    temp_df = pd.date_range(startdate, nextstartdate)
+    temp_df
+    #temp_df = pd.date_range(emdata[row.date], emdata[row.date])
+    #df[(df['dt'] > '2014-07-23 07:30:00') & (df['dt'] < '2014-07-23 09:00:00')]
+    #print(len(temp_df))
+
+# In[ ]:
+#Merging all table data in single dataframe for building models
+pwm=[]
+phaseapplied=[]
+sindex=[]
+for index, row in rtc_data_final.iterrows():
+    #print (row["timestamp"], row["gid"])
+    #rtc_date=pd.to_datetime(row["timestamp"]).date()
+    #print(row.date)
+    emdata[emdata.date.between('2017-12-12 ', '2017-12-12')]
+    temp_df = pd.date_range(emdata[row.date], emdata[row.date])
+    temp_df = emdata[emdata['date']== row.date]
+#    count = temp_df.count
+    print(len(temp_df))
+    if (len(temp_df) > 0):
+        print("RTC Date: ", row.date)   
+        for ind, emrow in emdata.iterrows():
+            em_date = pd.to_datetime(emrow["date"]).date()
+            #print("EnergyMeter Date:", em_date)
+            if (em_date==row.date):
+                print("Date is matching:", row.date)
+                emrow.reset = 1
+                sindex.append(row.sindex)
+                phaseapplied.append(row.phaseapplied)
+                timeschedule = rtc_config_df[rtc_config_df['sindex']]
+                pwm.append()
+            else:
+                print("Date is not matching", row.date, em_date)
+
+# In[ ]:
+#Merging all table data in single dataframe for building models
 #
-## In[ ]:
-#
-#df.loc[i/WRAP_SIZE]=[gid,setid,freq, Volt_PhaseR,Volt_PhaseY,Volt_PhaseB,Volt_PhaseR2Y,Volt_PhaseY2B,Volt_PhaseB2R,
-#                        Cur_PhaseR,Cur_PhaseY,Cur_PhaseB, Pow_FactR,Pow_FactY,Pow_FactB,Tot_Pow_Fact, Act_PowR,
-#                        Act_PowY,Act_PowB, Tot_Act_Power, Act_Energy,Load_Hours, timestamp, 0]
-#                        
-#   
-#   writer = pd.ExcelWriter("/Users/balajivr/Desktop/BABI/CapData/IoT_EnergyMeter_RTC_Data.xlsx",engine='xlsxwriter')
-#   df.to_excel(writer,sheet_name='Sheet1')
-#   writer.save()
-#
-## In[ ]:
-#
-#EnergyMeter
+for index, row in rtc_data_final.iterrows():
+    #print (row["timestamp"], row["gid"])
+    rtc_date=pd.to_datetime(row["date"]).date()
+    print("RTC Date: ", rtc_date)
+
+    for ind, emrow in emdata.iterrows():
+        em_date = pd.to_datetime(emrow["timestamp"]).date()
+        #print("EnergyMeter Date:", em_date)
+        if (em_date==rtc_date):
+            print("Date is matching:", rtc_date)
+        else:
+            print("Date is not matching", rtc_date, em_date)
+            #row['reset']=1
+            #if (pd.to_datetime(emrow["timestamp"]).date() > pd.to_datetime(row["timestamp"]).date()):
+                #emrow['resettimediff'] = emrow['timestamp'] - row['timestamp']
+                #print(emrow.difference)
+    #print(date)
