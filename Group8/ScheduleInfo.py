@@ -3,11 +3,8 @@ import numpy as np
 import datetime as dt
 
 
-def init_scheduleinfo():
-    #basepath = "/Users/balajivr/Desktop/BABI/CapData/"
-    basepath = "C:/Govi/BABI/Capstone/Wisys/CapstoneData/"
-
-    #Linux/MAC code to read RTC COMMAND TABLE, uncomment and change file path accordingly
+def init_scheduleinfo(basepath):
+      #Linux/MAC code to read RTC COMMAND TABLE, uncomment and change file path accordingly
     rtc_data = pd.read_csv(basepath +"rtc_command_table.csv")
     
     #Creating dataframe only with relevant fields, removed otherparams like offset
@@ -58,42 +55,38 @@ def init_scheduleinfo():
     
 
 # In[ ] :  
-def get_scheduled_pwm(timestamp, gid=49):
-    listpwm=[]
-    sch_applied = rtc_data_final[ rtc_data_final['date'] <= ts1 ]
+def get_scheduled_pwm(tstamp, gid=49):
+    pwm = pd.Series()
+    sch_applied = rtc_data_final[ rtc_data_final['date'] <= tstamp ]
 
     # Data is in Ascending order
     phase = sch_applied.tail(1)['phaseapplied']
     idx = sch_applied.tail(1)['sindex']
     
     ts2 = ts1.replace(year=1900, month=1, day=1)
-    rtc_config = rtc_config_df[ (rtc_config_df['sindex'] == int(idx[765])) & (rtc_config_df['time'] <= ts2) ] 
+    idx = int(idx.get_values()[0])
+    rtc_config = rtc_config_df[ (rtc_config_df['sindex'] == idx) & (rtc_config_df['time'] <= ts2) ] 
     
-    pwmval = rtc_config.tail(1)['pwm']
+    pwmval = int(rtc_config.tail(1)['pwm'].get_values()[0])
     
-     
-    listpwm.append(pwmval[20])
-    listpwm.append(pwmval[20])
-    listpwm.append(pwmval[20])
-    
-    
-    #phid = phase[765]
-    #if(phid==0) :
-    #    listpwm[0] = pwmval[20]
-    #    listpwm.append(1, pwmval[20])
-    #    listpwm.append(2, pwmval[20])
-    #elif(phid == 1 ):
-    #    listpwm.append(1,pwmval[20])
-    #elif(phid == 2 ):
-    #    listpwm.append(2,pwmval[20])
-    #elif(phid == 3 ):
-    #    listpwm.append(3, pwmval[20])
+ 
+    phid = int(phase.get_values()[0])
+    if(phid==0) :
+        pwm = pwm.set_value(1, pwmval)
+        pwm = pwm.set_value(2, pwmval)
+        pwm = pwm.set_value(3, pwmval)
+    elif(phid == 1 ):
+        pwm = pwm.set_value(1, pwmval)
+    elif(phid == 2 ):
+        pwm = pwm.set_value(2, pwmval)
+    elif(phid == 3 ):
+       pwm = pwm.set_value(3, pwmval)
 
-    return listpwm
+    return pwm
 
 # In[ ] :
-ts1 = pd.to_datetime("19-09-2018  16:20:00")
-init_scheduleinfo()    
+ts1 = pd.to_datetime("19-09-2018  16:45:00")
+init_scheduleinfo("C:/Govi/BABI/Capstone/Wisys/CapstoneData/")    
 pwms = get_scheduled_pwm(ts1)
 
 
