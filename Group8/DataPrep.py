@@ -45,7 +45,7 @@ def init_scheduleinfo(basepath):
     
     rtc_config_df = rtc_config_df.drop(columns=['time_hh', 'time_mm','sid', 'stype', 'status'])
 
-    return
+    return rtc_data_final
     
 
 # In[ ] :  
@@ -123,7 +123,7 @@ def init_energymeterdata(basepath):
     emdata['pwm2'] = pwm2 
     emdata['pwm3'] = pwm3  
 
-    return
+    return emdata
 
 
 

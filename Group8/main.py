@@ -4,11 +4,9 @@ from datetime import datetime
 
 import DataPrep as DP
 
-def init():
-    path = "C:/Govi/BABI/Capstone/Wisys/CapstoneData/"
-    DP.init_scheduleinfo(path)
-    DP.init_energymeterdata(path)
-    return
-    
-#Calling Initialization to create EnergyMeter, Schedule and Configuration dataframe    
-init()
+
+path = "C:/Govi/BABI/Capstone/Wisys/CapstoneData/"
+DP.init_scheduleinfo(path)
+emeter_data = DP.init_energymeterdata(path)
+print(emeter_data.head(5))
+ 
