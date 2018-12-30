@@ -75,7 +75,6 @@ def get_scheduled_pwm(tstamp, gid=49):
     return pwm
 
 # In[ ]:
-    
 def init_energymeterdata(basepath):
   
     EnergyMeter = pd.read_csv(basepath+ "energy_table.csv")
@@ -92,28 +91,27 @@ def init_energymeterdata(basepath):
     emdata = EnergyMeter.pivot_table(index = ['gid','setid','timestamp'], columns='reg_name', values='reg_data')
     
     #Inorder to access the index column, doing the reset_index to access emdata['gid'], emdata['timestamp']
-    emdata.index.names
     emdata.reset_index(inplace=True)
-    emdata.index.names
     
-    #Creating a New Column fro RTC_RESET 
-    emdata['rtc_reset']=0
-    
-    #emdata['time'],emdata['date']= emdata['timestamp'].apply(lambda x:x.time()), emdata['timestamp'].apply(lambda x:x.date())
-    temp = pd.DatetimeIndex(emdata['timestamp'])
-    emdata['date'] = temp.date
-    emdata['time'] = temp.time
-    emdata['date'] = pd.to_datetime(emdata['date'])
     emdata['timestamp'] = pd.to_datetime(emdata['timestamp'])
 
     pwm1 = []
     pwm2 = []
     pwm3 = []
+    exp_power = []
+   
+    
     for index, row in emdata.iterrows():
         pwms = get_scheduled_pwm( row['timestamp'] )
         pwm1.append( pwms.get_values()[0] )
         pwm2.append( pwms.get_values()[1] )
         pwm3.append( pwms.get_values()[2] )
+        
+        #using only PWM1:  Phase wise number of pulbs not known. assuming all in phase 1.
+        # total 9 Pulbs, each 12o watts
+        # 'expected power' = pwm1 * 120 * 9
+        power = (pwms.get_values()[0]/100) * 120 * 9
+        exp_power.append(power)
         if( (index%1000) == 0 ):
             print(".", end="")
        
@@ -122,9 +120,8 @@ def init_energymeterdata(basepath):
     emdata['pwm1'] = pwm1  
     emdata['pwm2'] = pwm2 
     emdata['pwm3'] = pwm3  
-
+    emdata['expected power'] = exp_power
+    
     return emdata
-
-
 
 
